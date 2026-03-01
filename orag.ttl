@@ -1,0 +1,522 @@
+@base <https://www.ontorag.org/vocab#> .
+@prefix orag:   <https://www.ontorag.org/vocab#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms:<http://purl.org/dc/terms/> .
+@prefix prov:   <http://www.w3.org/ns/prov#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+
+#################################################################
+# Ontology header
+#################################################################
+
+orag: a owl:Ontology ;
+  dcterms:title "OntoRAG Metadata Vocabulary (orag)"@en ;
+  dcterms:description "A small vocabulary to describe sources, derived knowledge graphs, indices, and build runs for OntoRAG-style pipelines."@en ;
+  dcterms:license <https://creativecommons.org/publicdomain/zero/1.0/> ;
+  owl:versionInfo "0.1.0" ;
+  dcterms:created "2026-02-28"^^xsd:date .
+
+#################################################################
+# Datatypes / utility
+#################################################################
+
+orag:Json a rdfs:Datatype ;
+  rdfs:label "JSON literal"@en ;
+  rdfs:comment "A JSON-encoded string literal (use with xsd:string lexical form)."@en .
+
+orag:HashAlgorithm a rdfs:Datatype ;
+  rdfs:label "Hash algorithm name"@en ;
+  rdfs:comment "Algorithm identifier, e.g., sha256, blake3, multihash."@en .
+
+#################################################################
+# Core classes
+#################################################################
+
+orag:Artifact a owl:Class ;
+  rdfs:label "Artifact"@en ;
+  rdfs:comment "A versioned, addressable unit produced or consumed by OntoRAG (source, graph, index, report, etc.)."@en ;
+  rdfs:subClassOf prov:Entity .
+
+orag:SourceArtifact a owl:Class ;
+  rdfs:label "Source Artifact"@en ;
+  rdfs:comment "An original content source (PDF, HTML, Markdown, git repo snapshot, etc.)."@en ;
+  rdfs:subClassOf orag:Artifact .
+
+orag:GraphArtifact a owl:Class ;
+  rdfs:label "Graph Artifact"@en ;
+  rdfs:comment "An RDF knowledge graph artifact, typically stored as one or more named graphs (e.g., TriG) and promoted through staging/certified statuses."@en ;
+  rdfs:subClassOf orag:Artifact .
+
+orag:IndexArtifact a owl:Class ;
+  rdfs:label "Index Artifact"@en ;
+  rdfs:comment "An index built from a SourceArtifact and/or GraphArtifact (e.g., LlamaIndex, PageIndex, BM25, embedding store) used for retrieval and citations."@en ;
+  rdfs:subClassOf orag:Artifact .
+
+orag:BuildRun a owl:Class ;
+  rdfs:label "Build Run"@en ;
+  rdfs:comment "A build/ingestion execution that transforms sources into graphs and indices."@en ;
+  rdfs:subClassOf prov:Activity .
+
+orag:QualityReport a owl:Class ;
+  rdfs:label "Quality Report"@en ;
+  rdfs:comment "A report with metrics, warnings, and validation results (e.g., SHACL results, coverage stats)."@en ;
+  rdfs:subClassOf orag:Artifact .
+
+orag:AccessPolicy a owl:Class ;
+  rdfs:label "Access Policy"@en ;
+  rdfs:comment "A coarse access classification for artifacts."@en ;
+  rdfs:subClassOf skos:Concept .
+
+orag:ArtifactStatus a owl:Class ;
+  rdfs:label "Artifact Status"@en ;
+  rdfs:comment "Lifecycle status for artifacts in the pipeline (staging/certified/etc.)."@en ;
+  rdfs:subClassOf skos:Concept .
+
+orag:IndexMethod a owl:Class ;
+  rdfs:label "Index Method"@en ;
+  rdfs:comment "A named indexing approach/engine (e.g., LlamaIndex, PageIndex)."@en ;
+  rdfs:subClassOf skos:Concept .
+
+orag:IndexScope a owl:Class ;
+  rdfs:label "Index Scope"@en ;
+  rdfs:comment "Granularity/scope used by an index (page/chunk/section/document)."@en ;
+  rdfs:subClassOf skos:Concept .
+
+orag:CitationPolicy a owl:Class ;
+  rdfs:label "Citation Policy"@en ;
+  rdfs:comment "How precisely an artifact can cite back to a source (page-accurate vs approximate)."@en ;
+  rdfs:subClassOf skos:Concept .
+
+orag:AnchorScheme a owl:Class ;
+  rdfs:label "Anchor Scheme"@en ;
+  rdfs:comment "Scheme used to create stable anchors in sources (page ids, section ids, offsets, etc.)."@en ;
+  rdfs:subClassOf skos:Concept .
+
+orag:ActivationProfile a owl:Class ;
+  rdfs:label "Activation Profile"@en ;
+  rdfs:comment "A preset selection of enabled/disabled graph artifacts (typically stored runtime; this class models the concept)."@en ;
+  rdfs:subClassOf prov:Entity .
+
+orag:Product a owl:Class ;
+  rdfs:label "Product"@en ;
+  rdfs:comment "A licensable store product (DriveThruRPG, itch.io, etc.) required for access to protected artifacts."@en ;
+  rdfs:subClassOf prov:Entity .
+
+#################################################################
+# Properties (Artifact identity, hashing, status)
+#################################################################
+
+orag:contentHash a owl:DatatypeProperty ;
+  rdfs:label "content hash"@en ;
+  rdfs:comment "Hash of the canonical build/content representation (not necessarily the raw file hash)."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range xsd:string .
+
+orag:hashAlgorithm a owl:DatatypeProperty ;
+  rdfs:label "hash algorithm"@en ;
+  rdfs:comment "Algorithm name used for contentHash (e.g., sha256)."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range orag:HashAlgorithm .
+
+orag:status a owl:ObjectProperty ;
+  rdfs:label "status"@en ;
+  rdfs:comment "Lifecycle status of an artifact (staging/certified/deprecated/etc.)."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range orag:ArtifactStatus .
+
+orag:accessPolicy a owl:ObjectProperty ;
+  rdfs:label "access policy"@en ;
+  rdfs:comment "Access classification for an artifact (public/protected/internal/etc.)."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range orag:AccessPolicy .
+
+orag:dependsOn a owl:ObjectProperty ;
+  rdfs:label "depends on"@en ;
+  rdfs:comment "Declares dependencies between artifacts (e.g., a manual graph depends on an SRD graph)."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range orag:Artifact .
+
+orag:hasReport a owl:ObjectProperty ;
+  rdfs:label "has report"@en ;
+  rdfs:comment "Links an artifact to one or more QualityReports."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range orag:QualityReport .
+
+#################################################################
+# GraphArtifact-specific properties
+#################################################################
+
+orag:contentGraph a owl:ObjectProperty ;
+  rdfs:label "content graph"@en ;
+  rdfs:comment "IRI of the named graph that contains the primary RDF content."@en ;
+  rdfs:domain orag:GraphArtifact ;
+  rdfs:range xsd:anyURI .
+
+orag:manifestGraph a owl:ObjectProperty ;
+  rdfs:label "manifest graph"@en ;
+  rdfs:comment "IRI of the named graph that contains manifest/metadata triples for this artifact."@en ;
+  rdfs:domain orag:GraphArtifact ;
+  rdfs:range xsd:anyURI .
+
+orag:hasIndex a owl:ObjectProperty ;
+  rdfs:label "has index"@en ;
+  rdfs:comment "Links a GraphArtifact to one or more IndexArtifacts built for it."@en ;
+  rdfs:domain orag:GraphArtifact ;
+  rdfs:range orag:IndexArtifact .
+
+#################################################################
+# SourceArtifact-specific properties
+#################################################################
+
+orag:mediaType a owl:DatatypeProperty ;
+  rdfs:label "media type"@en ;
+  rdfs:comment "MIME type of the source (e.g., application/pdf, text/html)."@en ;
+  rdfs:domain orag:SourceArtifact ;
+  rdfs:range xsd:string .
+
+orag:sourceLocator a owl:DatatypeProperty ;
+  rdfs:label "source locator"@en ;
+  rdfs:comment "A locator for the source content (URL, URN, path, store key). Keep it stable when possible."@en ;
+  rdfs:domain orag:SourceArtifact ;
+  rdfs:range xsd:string .
+
+orag:anchorScheme a owl:ObjectProperty ;
+  rdfs:label "anchor scheme"@en ;
+  rdfs:comment "Anchor scheme used for stable references in this source (page/section/offset identifiers)."@en ;
+  rdfs:domain orag:SourceArtifact ;
+  rdfs:range orag:AnchorScheme .
+
+#################################################################
+# IndexArtifact-specific properties
+#################################################################
+
+orag:indexMethod a owl:ObjectProperty ;
+  rdfs:label "index method"@en ;
+  rdfs:comment "Indexing engine/method used to build this index (e.g., LlamaIndex, PageIndex)."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range orag:IndexMethod .
+
+orag:indexScope a owl:ObjectProperty ;
+  rdfs:label "index scope"@en ;
+  rdfs:comment "Granularity at which the index operates (page/chunk/section/document)."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range orag:IndexScope .
+
+orag:storesAt a owl:DatatypeProperty ;
+  rdfs:label "stores at"@en ;
+  rdfs:comment "Locator for where the index is stored (db id, bucket key, URI, etc.)."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range xsd:string .
+
+orag:params a owl:DatatypeProperty ;
+  rdfs:label "params"@en ;
+  rdfs:comment "JSON configuration parameters used to build the index (stored as a JSON literal)."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range orag:Json .
+
+orag:embeddingModel a owl:DatatypeProperty ;
+  rdfs:label "embedding model"@en ;
+  rdfs:comment "Embedding model identifier when the index uses embeddings (optional)."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range xsd:string .
+
+orag:citationPolicy a owl:ObjectProperty ;
+  rdfs:label "citation policy"@en ;
+  rdfs:comment "How precisely this index can cite back to the original source."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range orag:CitationPolicy .
+
+orag:coverage a owl:DatatypeProperty ;
+  rdfs:label "coverage"@en ;
+  rdfs:comment "A numeric coverage indicator for the index (interpretation depends on method; typically 0..1)."@en ;
+  rdfs:domain orag:IndexArtifact ;
+  rdfs:range xsd:decimal .
+
+#################################################################
+# BuildRun / provenance links
+#################################################################
+
+orag:producedArtifact a owl:ObjectProperty ;
+  rdfs:label "produced artifact"@en ;
+  rdfs:comment "An artifact produced by a build run."@en ;
+  rdfs:domain orag:BuildRun ;
+  rdfs:range orag:Artifact ;
+  rdfs:subPropertyOf prov:generated .
+
+orag:consumedArtifact a owl:ObjectProperty ;
+  rdfs:label "consumed artifact"@en ;
+  rdfs:comment "An artifact consumed as input by a build run."@en ;
+  rdfs:domain orag:BuildRun ;
+  rdfs:range orag:Artifact ;
+  rdfs:subPropertyOf prov:used .
+
+orag:pipelineVersion a owl:DatatypeProperty ;
+  rdfs:label "pipeline version"@en ;
+  rdfs:comment "Version identifier of the pipeline that executed the build run."@en ;
+  rdfs:domain orag:BuildRun ;
+  rdfs:range xsd:string .
+
+#################################################################
+# Licensing / store gating (conceptual)
+#################################################################
+
+orag:requiresProduct a owl:ObjectProperty ;
+  rdfs:label "requires product"@en ;
+  rdfs:comment "Indicates that access to an artifact requires ownership of a store product."@en ;
+  rdfs:domain orag:Artifact ;
+  rdfs:range orag:Product .
+
+orag:store a owl:DatatypeProperty ;
+  rdfs:label "store"@en ;
+  rdfs:comment "Store identifier (e.g., drivethrurpg, itch)."@en ;
+  rdfs:domain orag:Product ;
+  rdfs:range xsd:string .
+
+orag:productId a owl:DatatypeProperty ;
+  rdfs:label "product id"@en ;
+  rdfs:comment "Store-specific product identifier."@en ;
+  rdfs:domain orag:Product ;
+  rdfs:range xsd:string .
+
+#################################################################
+# Activation profiles (conceptual model; runtime usually lives in DB)
+#################################################################
+
+orag:enablesGraph a owl:ObjectProperty ;
+  rdfs:label "enables graph"@en ;
+  rdfs:comment "Graphs enabled by an activation profile."@en ;
+  rdfs:domain orag:ActivationProfile ;
+  rdfs:range orag:GraphArtifact .
+
+orag:disablesGraph a owl:ObjectProperty ;
+  rdfs:label "disables graph"@en ;
+  rdfs:comment "Graphs explicitly disabled by an activation profile (even if owned)."@en ;
+  rdfs:domain orag:ActivationProfile ;
+  rdfs:range orag:GraphArtifact .
+
+#################################################################
+# Controlled vocabularies (statuses, policies, methods, scopes)
+#################################################################
+
+# ArtifactStatus
+orag:Staging a orag:ArtifactStatus ; skos:prefLabel "Staging"@en .
+orag:Certified a orag:ArtifactStatus ; skos:prefLabel "Certified"@en .
+orag:Deprecated a orag:ArtifactStatus ; skos:prefLabel "Deprecated"@en .
+orag:Revoked a orag:ArtifactStatus ; skos:prefLabel "Revoked"@en .
+
+# AccessPolicy
+orag:Public a orag:AccessPolicy ; skos:prefLabel "Public"@en .
+orag:Protected a orag:AccessPolicy ; skos:prefLabel "Protected"@en .
+orag:Internal a orag:AccessPolicy ; skos:prefLabel "Internal"@en .
+
+# IndexMethod
+orag:LlamaIndex a orag:IndexMethod ; skos:prefLabel "LlamaIndex"@en .
+orag:PageIndex a orag:IndexMethod ; skos:prefLabel "PageIndex"@en .
+orag:BM25 a orag:IndexMethod ; skos:prefLabel "BM25"@en .
+orag:EmbeddingStore a orag:IndexMethod ; skos:prefLabel "Embedding Store"@en .
+
+# IndexScope
+orag:DocumentLevel a orag:IndexScope ; skos:prefLabel "Document-level"@en .
+orag:SectionLevel a orag:IndexScope ; skos:prefLabel "Section-level"@en .
+orag:PageLevel a orag:IndexScope ; skos:prefLabel "Page-level"@en .
+orag:ChunkLevel a orag:IndexScope ; skos:prefLabel "Chunk-level"@en .
+
+# CitationPolicy
+orag:PageAccurate a orag:CitationPolicy ; skos:prefLabel "Page-accurate"@en .
+orag:SectionApproximate a orag:CitationPolicy ; skos:prefLabel "Section-approximate"@en .
+orag:Unanchored a orag:CitationPolicy ; skos:prefLabel "Unanchored"@en .
+
+# AnchorScheme
+orag:PageNumberAnchors a orag:AnchorScheme ; skos:prefLabel "Page number anchors"@en .
+orag:SectionIdAnchors a orag:AnchorScheme ; skos:prefLabel "Section ID anchors"@en .
+orag:ByteOffsetAnchors a orag:AnchorScheme ; skos:prefLabel "Byte/offset anchors"@en .
+
+#################################################################
+# SourceSpan: abstract, content-type-agnostic citation anchors
+#################################################################
+
+orag:SourceSpan a owl:Class ;
+  rdfs:label "Source Span"@en ;
+  rdfs:comment "A content-type-agnostic reference to a contiguous region ('span') inside a SourceArtifact (or derived representation). Used for RAG citations, explainability, and precise UI highlighting."@en ;
+  rdfs:subClassOf prov:Entity .
+
+orag:SpanSelector a owl:Class ;
+  rdfs:label "Span Selector"@en ;
+  rdfs:comment "A selector describing how a span is addressed within a specific representation (page-based, section-based, offsets, timecodes, fragment identifiers, etc.). A SourceSpan can have multiple selectors for different representations of the same source."@en ;
+  rdfs:subClassOf prov:Entity .
+
+orag:SpanRepresentation a owl:Class ;
+  rdfs:label "Span Representation"@en ;
+  rdfs:comment "A specific representation/view of a SourceArtifact to which a selector applies (e.g., original PDF, extracted text, rendered page images, HTML DOM snapshot, audio transcript)."@en ;
+  rdfs:subClassOf prov:Entity .
+
+#################################################################
+# Linkage: what a span is about
+#################################################################
+
+orag:inSource a owl:ObjectProperty ;
+  rdfs:label "in source"@en ;
+  rdfs:comment "The SourceArtifact that contains this span."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range orag:SourceArtifact .
+
+orag:hasSelector a owl:ObjectProperty ;
+  rdfs:label "has selector"@en ;
+  rdfs:comment "One or more selectors that can locate this span inside a given representation."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range orag:SpanSelector .
+
+orag:inRepresentation a owl:ObjectProperty ;
+  rdfs:label "in representation"@en ;
+  rdfs:comment "The representation/view to which this selector applies (optional but recommended when multiple representations exist)."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range orag:SpanRepresentation .
+
+orag:representsSource a owl:ObjectProperty ;
+  rdfs:label "represents source"@en ;
+  rdfs:comment "The SourceArtifact that this representation is derived from."@en ;
+  rdfs:domain orag:SpanRepresentation ;
+  rdfs:range orag:SourceArtifact .
+
+orag:representationType a owl:DatatypeProperty ;
+  rdfs:label "representation type"@en ;
+  rdfs:comment "A short identifier for the representation kind (e.g., original, extractedText, renderedPages, htmlSnapshot, transcript)."@en ;
+  rdfs:domain orag:SpanRepresentation ;
+  rdfs:range xsd:string .
+
+orag:mediaType a owl:DatatypeProperty ;
+  rdfs:label "media type"@en ;
+  rdfs:comment "MIME type of the representation (e.g., application/pdf, text/plain, image/png, text/html)."@en ;
+  rdfs:domain orag:SpanRepresentation ;
+  rdfs:range xsd:string .
+
+orag:locator a owl:DatatypeProperty ;
+  rdfs:label "locator"@en ;
+  rdfs:comment "A locator/handle for the representation (URL, URN, path, storage key). Not necessarily user-visible."@en ;
+  rdfs:domain orag:SpanRepresentation ;
+  rdfs:range xsd:string .
+
+#################################################################
+# Normalized excerpt + integrity (optional but very useful)
+#################################################################
+
+orag:excerpt a owl:DatatypeProperty ;
+  rdfs:label "excerpt"@en ;
+  rdfs:comment "A short excerpt of the span content for UX/debugging. Keep it small; do not treat as a dump mechanism."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range xsd:string .
+
+orag:excerptHash a owl:DatatypeProperty ;
+  rdfs:label "excerpt hash"@en ;
+  rdfs:comment "Hash of the excerpt or normalized span text to detect drift across rebuilds (optional)."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range xsd:string .
+
+orag:confidence a owl:DatatypeProperty ;
+  rdfs:label "confidence"@en ;
+  rdfs:comment "Confidence score (0..1) for the span alignment/selection (e.g., OCR alignment, page mapping)."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range xsd:decimal .
+
+#################################################################
+# Selector model: a small set of abstract fields + typed schemes
+#################################################################
+
+orag:selectorType a owl:DatatypeProperty ;
+  rdfs:label "selector type"@en ;
+  rdfs:comment "Selector scheme identifier (e.g., pageRange, sectionPath, charRange, byteRange, timeRange, fragment)."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:string .
+
+orag:start a owl:DatatypeProperty ;
+  rdfs:label "start"@en ;
+  rdfs:comment "Start position; semantics depend on selectorType (e.g., page number, char offset, byte offset, seconds)."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:decimal .
+
+orag:end a owl:DatatypeProperty ;
+  rdfs:label "end"@en ;
+  rdfs:comment "End position (exclusive unless otherwise specified); semantics depend on selectorType."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:decimal .
+
+orag:path a owl:DatatypeProperty ;
+  rdfs:label "path"@en ;
+  rdfs:comment "A structured path to a node/section (e.g., XPath/CSS selector, heading path, JSON pointer). Use with selectorType like sectionPath or domPath."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:string .
+
+orag:fragment a owl:DatatypeProperty ;
+  rdfs:label "fragment"@en ;
+  rdfs:comment "A fragment identifier string (e.g., URL fragment, internal anchor id) used by fragment selectorType."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:string .
+
+orag:unit a owl:DatatypeProperty ;
+  rdfs:label "unit"@en ;
+  rdfs:comment "Unit for start/end (e.g., page, char, byte, second). Optional if implied by selectorType."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:string .
+
+orag:inclusiveEnd a owl:DatatypeProperty ;
+  rdfs:label "inclusive end"@en ;
+  rdfs:comment "If true, end is inclusive; otherwise treat end as exclusive. Defaults to false."@en ;
+  rdfs:domain orag:SpanSelector ;
+  rdfs:range xsd:boolean .
+
+#################################################################
+# Convenience: connect spans to derived artifacts / KG nodes
+#################################################################
+
+orag:about a owl:ObjectProperty ;
+  rdfs:label "about"@en ;
+  rdfs:comment "What this span supports/justifies (a KG node, a statement reified as an entity, an answer, etc.)."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range prov:Entity .
+
+orag:supportsGraph a owl:ObjectProperty ;
+  rdfs:label "supports graph"@en ;
+  rdfs:comment "The GraphArtifact whose assertions are supported by this span (optional, for provenance stitching)."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range orag:GraphArtifact .
+
+orag:supportsIndex a owl:ObjectProperty ;
+  rdfs:label "supports index"@en ;
+  rdfs:comment "The IndexArtifact that retrieved or produced this span (optional, useful for debugging routing)."@en ;
+  rdfs:domain orag:SourceSpan ;
+  rdfs:range orag:IndexArtifact .
+
+#################################################################
+# Suggested selectorType values (as SKOS-ish individuals, optional)
+#################################################################
+
+orag:PageRange a prov:Entity ;
+  rdfs:label "pageRange"@en ;
+  rdfs:comment "Selector scheme for page-based spans (start/end as page numbers)."@en .
+
+orag:CharRange a prov:Entity ;
+  rdfs:label "charRange"@en ;
+  rdfs:comment "Selector scheme for character offsets in extracted text (start/end as char offsets)."@en .
+
+orag:ByteRange a prov:Entity ;
+  rdfs:label "byteRange"@en ;
+  rdfs:comment "Selector scheme for byte offsets in a binary/text blob (start/end as bytes)."@en .
+
+orag:TimeRange a prov:Entity ;
+  rdfs:label "timeRange"@en ;
+  rdfs:comment "Selector scheme for time-based media (start/end as seconds or milliseconds)."@en .
+
+orag:SectionPath a prov:Entity ;
+  rdfs:label "sectionPath"@en ;
+  rdfs:comment "Selector scheme for hierarchical section references (path as heading/section path; optional start/end within section)."@en .
+
+orag:DomPath a prov:Entity ;
+  rdfs:label "domPath"@en ;
+  rdfs:comment "Selector scheme for HTML/DOM snapshots (path as CSS selector or XPath; optional start/end as char offsets)."@en .
+
+orag:FragmentSelector a prov:Entity ;
+  rdfs:label "fragment"@en ;
+  rdfs:comment "Selector scheme for fragment identifiers (fragment string)."@en .
