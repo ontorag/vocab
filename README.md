@@ -1,259 +1,34 @@
-# OntoRAG Vocabulary (`orag:`)
+# OntoRAG Build Vocabulary (`orag:`) and Dataset Format
 
-**Namespace:**  
-`https://www.ontorag.org/vocab#`
+This repository defines two things:
 
-OntoRAG (`orag:`) is a lightweight metadata vocabulary designed to describe:
+- **The build vocabulary.** It describes what an OntoRAG pipeline produces and how: datasets, schema cards, exported ontologies, instance graphs, indexes, build runs, baseline ontologies, alignment decisions and governance status.
+- **The dataset format.** These are the JSON Schemas for a published dataset's `manifest.json` and its chunk, embedding and entity records.
 
-- Source artifacts (PDF, HTML, Markdown, repositories, etc.)
-- Derived RDF knowledge graphs
-- Index artifacts (LlamaIndex, PageIndex, embedding stores, etc.)
-- Build and ingestion runs
-- Content-type-agnostic citation spans for RAG explainability
+**Documentation:** https://ontorag.org/vocab/
+**Namespace:** `https://ontorag.org/vocab#` · **Prefix:** `orag:` · **Version:** 0.2.0 · **Dataset format:** 0.1
 
-The goal is to provide a structured, interoperable layer for managing ingestion, graph construction, indexing, licensing, and provenance in Retrieval-Augmented Generation (RAG) systems.
+Evidence and composition are covered by the companion [OntoRAG Provenance and Citation Ontology](https://ontorag.org/provenance/) (`orp:`): where a resource comes from, how to cite it, and how per-source packs compose. The two specifications share PROV-O, and an `orag:Dataset` is a `void:Dataset` whose subsets are `orp:Pack`s.
 
----
+## Repository
 
-## Design Goals
+| Path | Contents |
+|---|---|
+| `orag.ttl` | The vocabulary |
+| `dataset/0.1/*.schema.json` | Dataset format: `manifest`, `chunk`, `embedding`, `entity` (served at `https://ontorag.org/vocab/dataset/0.1/`) |
+| `examples/` | A governed build lineage, the Ars Magica dataset's build metadata, and sample dataset records |
+| `tools/check.py` | Validates the vocabulary, the schemas and the samples |
+| `tools/build_site.py` | Builds the documentation site into `_site/` |
 
-OntoRAG is built around a few core principles:
-
-- **Artifact-centric modeling** — Everything is an `orag:Artifact` (source, graph, index, report).
-- **Pipeline traceability** — All transformations are modeled with `orag:BuildRun` (based on PROV-O).
-- **Named-graph awareness** — `orag:GraphArtifact` explicitly references its `contentGraph` and `manifestGraph`.
-- **Index abstraction** — Different indexing strategies are described uniformly as `orag:IndexArtifact`.
-- **RAG explainability** — `orag:SourceSpan` enables content-type-agnostic citation and anchoring.
-- **Licensing support** — Artifacts can declare required products and access policies.
-- **Content neutrality** — The model does not assume PDFs, text, HTML, audio, etc. Everything is abstracted.
-
-The ontology reuses standard vocabularies where possible:
-
-- **PROV-O** for provenance
-- **Dublin Core (dcterms)** for bibliographic metadata
-- **SKOS** for controlled vocabularies
-- **OWL/RDFS** for schema definition
-
----
-
-# Core Concepts
-
-## 1. Artifact Model
-
-All managed objects derive from:
-
-```ttl
-orag:Artifact
-````
-
-Subclasses:
-
-* `orag:SourceArtifact` — Original source material
-* `orag:GraphArtifact` — RDF knowledge graph build
-* `orag:IndexArtifact` — Retrieval index
-* `orag:QualityReport` — Validation or metrics artifact
-
-### Identity & Versioning
-
-Each artifact can declare:
-
-* `orag:contentHash`
-* `orag:hashAlgorithm`
-* `orag:status` (Staging / Certified / Deprecated / Revoked)
-* `orag:accessPolicy` (Public / Protected / Internal)
-* `orag:dependsOn` (artifact dependencies)
-
-This allows deterministic builds and reproducibility.
-
----
-
-## 2. GraphArtifact
-
-A `GraphArtifact` represents a versioned RDF build.
-
-Key properties:
-
-* `orag:contentGraph` — Named graph IRI containing RDF data
-* `orag:manifestGraph` — Named graph IRI containing metadata
-* `orag:hasIndex` — Associated `IndexArtifact`
-* `orag:dependsOn` — Other graph artifacts (e.g., SRD base)
-
-This supports modular graph composition (e.g., enabling/disabling manuals per session).
-
----
-
-## 3. IndexArtifact
-
-An `IndexArtifact` describes a retrieval layer built on top of a source or graph.
-
-It abstracts over:
-
-* LlamaIndex
-* PageIndex
-* Embedding stores
-* BM25 / keyword search
-* Hybrid retrieval systems
-
-Key properties:
-
-* `orag:indexMethod`
-* `orag:indexScope` (Document / Section / Page / Chunk)
-* `orag:embeddingModel`
-* `orag:storesAt`
-* `orag:params` (JSON configuration)
-* `orag:citationPolicy`
-* `orag:coverage`
-
-This allows multiple indexes per artifact and dynamic routing strategies.
-
----
-
-## 4. BuildRun (Pipeline Execution)
-
-Each ingestion or transformation step is modeled as:
-
-```ttl
-orag:BuildRun
+```sh
+uv run --with rdflib --with jsonschema tools/check.py            # add --remote to verify external terms exist
+uv run --with rdflib tools/build_site.py
 ```
 
-Properties:
+## Changes from 0.1.0
 
-* `orag:producedArtifact`
-* `orag:consumedArtifact`
-* `orag:pipelineVersion`
+Version 0.2.0 changes the namespace from `https://www.ontorag.org/vocab#` to `https://ontorag.org/vocab#`. It removes the terms that overlapped with `orp:`, drops store and entitlement terms (these belong to the serving application), and adds datasets, schema cards, stages, baselines and alignment. The documentation has a [full migration table](https://ontorag.org/vocab/#changes). This repository was previously named `ontorag/schemas`.
 
-This enables full provenance tracking of transformations from source to graph to index.
+## Licence
 
----
-
-# RAG Explainability: `orag:SourceSpan`
-
-One of the most important components is `orag:SourceSpan`.
-
-It models a content-type-agnostic span inside a source.
-
-A span:
-
-* Belongs to a `orag:SourceArtifact`
-* Has one or more `orag:SpanSelector`
-* May contain an `orag:excerpt`
-* May declare `orag:confidence`
-* Can support a graph or index
-
-Example use cases:
-
-* Page 42–43 in a PDF
-* Character offsets in extracted text
-* XPath node in HTML
-* Time range in audio transcript
-* Section path in Markdown
-
-## SpanSelector
-
-Selectors are abstract and flexible:
-
-* `orag:selectorType` (pageRange, charRange, byteRange, timeRange, sectionPath, fragment, domPath)
-* `orag:start`
-* `orag:end`
-* `orag:path`
-* `orag:fragment`
-* `orag:unit`
-* `orag:inclusiveEnd`
-
-This allows spans to remain independent from file formats.
-
-## SpanRepresentation
-
-Because a source may have multiple representations (original PDF, extracted text, HTML snapshot), selectors can attach to:
-
-```ttl
-orag:SpanRepresentation
-```
-
-This ensures alignment between different ingestion layers.
-
----
-
-# Licensing & Access Control
-
-Artifacts may declare:
-
-* `orag:accessPolicy`
-* `orag:requiresProduct`
-* `orag:Product`
-
-  * `orag:store`
-  * `orag:productId`
-
-This allows entitlement-aware graph composition without embedding runtime state into the ontology.
-
-Activation (enabled/disabled graphs per session) is modeled conceptually via:
-
-```ttl
-orag:ActivationProfile
-```
-
-but typically managed at application level.
-
----
-
-# Controlled Vocabularies
-
-The ontology includes controlled concepts for:
-
-* `orag:ArtifactStatus`
-* `orag:AccessPolicy`
-* `orag:IndexMethod`
-* `orag:IndexScope`
-* `orag:CitationPolicy`
-* `orag:AnchorScheme`
-
-These are modeled as SKOS-style individuals to allow extension.
-
----
-
-# Typical Architecture Pattern
-
-A typical OntoRAG-based system may:
-
-1. Ingest a `SourceArtifact`
-2. Execute a `BuildRun`
-3. Produce:
-
-   * A `GraphArtifact` (named graph RDF)
-   * One or more `IndexArtifact`
-4. Validate via SHACL
-5. Promote artifact status to `orag:Certified`
-6. Serve read-only via API or sandboxed SPARQL
-
-`SourceSpan` objects provide explainability for RAG answers and graph assertions.
-
----
-
-# Why This Matters
-
-OntoRAG is not a domain ontology.
-
-It is **infrastructure ontology**.
-
-It enables:
-
-* Deterministic knowledge graph builds
-* Multi-index RAG strategies
-* Entitlement-aware graph composition
-* Explainable AI outputs
-* Reproducible ingestion pipelines
-* Format-agnostic citation systems
-
-It treats RAG not as a black box, but as a traceable, inspectable knowledge production system.
-
----
-
-# Status
-
-Version: `0.1.0`
-Namespace: `https://www.ontorag.org/vocab#`
-
-This vocabulary is expected to evolve alongside OntoRAG ingestion and retrieval pipelines.
-
-Contributions and extensions are welcome.
+[CC0 1.0](LICENSE). The sample dataset records in `examples/dataset/` come from the Ars Magica Open License and are CC-BY-SA 4.0.

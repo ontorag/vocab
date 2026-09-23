@@ -1,0 +1,69 @@
+# Build metadata for the Ars Magica Open License dataset, taken from its manifest.json (v0.4.2).
+# The dataset's packs, sources and citations are described with orp: (see ontorag.org/provenance).
+# Resource IRIs under the repository URL are illustrative; the dataset itself does not publish them.
+
+@prefix orag:    <https://ontorag.org/vocab#> .
+@prefix orp:     <https://ontorag.org/provenance#> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix void:    <http://rdfs.org/ns/void#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix vann:    <http://purl.org/vocab/vann/> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix amol:    <https://github.com/openfantasymap/amol-ontorag/> .
+
+amol:dataset a orag:Dataset ;
+    dcterms:title "Ars Magica Open License — OntoRAG" ;
+    dcterms:identifier "amol" ;
+    dcterms:hasVersion "0.4.2" ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    orag:specVersion "0.1" ;
+    orag:manifest <https://github.com/openfantasymap/amol-ontorag/blob/main/manifest.json> ;
+    orag:accessPolicy orag:Public ;
+    orag:alignedWith amol:baseline-rpg , amol:baseline-schemaorg , amol:baseline-dublincore , amol:baseline-foaf ;
+    void:subset amol:pack-definitive-edition-core-rules ;
+    orag:hasIndex amol:vectors .
+
+amol:pack-definitive-edition-core-rules a orp:Pack ;
+    orp:packOf amol:source-definitive-edition-core-rules ;
+    orp:namedGraph amol:graph-definitive-edition-core-rules .
+
+amol:source-definitive-edition-core-rules a orp:Source ;
+    dcterms:title "Ars Magica Definitive Edition" ;
+    dcterms:identifier "definitive-edition-core-rules" .
+
+amol:baseline-rpg a orag:BaselineOntology ;
+    dcterms:identifier "rpg" ;
+    orag:alignmentRole orag:DomainSchema .
+amol:baseline-schemaorg a orag:BaselineOntology ;
+    dcterms:identifier "schemaorg" ;
+    orag:alignmentRole orag:SupportingVocabulary .
+amol:baseline-dublincore a orag:BaselineOntology ;
+    dcterms:identifier "dublincore" ;
+    orag:alignmentRole orag:SupportingVocabulary .
+amol:baseline-foaf a orag:BaselineOntology ;
+    dcterms:identifier "foaf" ;
+    orag:alignmentRole orag:SupportingVocabulary .
+
+amol:world a orag:GraphArtifact ;
+    rdfs:label "ontology/world.ttl" ;
+    orag:buildOf amol:dataset ;
+    orag:location "ontology/world.ttl"^^xsd:anyURI .
+
+amol:vectors a orag:IndexArtifact ;
+    rdfs:label "Chunk embeddings" ;
+    orag:location "embeddings/vectors/"^^xsd:anyURI ;
+    orag:indexMethod orag:DenseVectors ;
+    orag:indexScope orag:ChunkLevel ;
+    orag:citationPolicy orag:SectionAccurate ;
+    orag:embeddingModel "nomic-embed-text" ;
+    orag:dimensions 768 ;
+    orag:similarityMetric "cosine" ;
+    orag:params """{"chunking": "heading+window", "target_tokens": 320, "overlap_tokens": 48, "normalized": true}"""^^rdf:JSON .
+
+amol:build a orag:BuildRun ;
+    orag:stage orag:BuildIndex ;
+    orag:produced amol:vectors ;
+    orag:pipelineVersion "amol-ontorag tools/build.py" ;
+    prov:endedAtTime "2026-07-02T14:07:32+00:00"^^xsd:dateTime .

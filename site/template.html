@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OntoRAG Build Vocabulary</title>
+<meta name="description" content="The OntoRAG build vocabulary (orag:) and dataset format: what an OntoRAG pipeline produces, how it was built, and how a published dataset is laid out.">
+<link rel="alternate" type="text/turtle" href="orag.ttl">
+<link rel="alternate" type="application/ld+json" href="orag.jsonld">
+<link rel="alternate" type="application/n-triples" href="orag.nt">
+<link rel="alternate" type="application/rdf+xml" href="orag.rdf">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="sitebar" aria-label="OntoRAG">
+  <div class="wrap">
+    <a class="brand" href="https://ontorag.org/">OntoRAG</a>
+    <a href="https://ontorag.org/concepts/">Concepts</a>
+    <a href="https://ontorag.org/pipeline/">Pipeline</a>
+    <a href="https://ontorag.org/specs/" aria-current="page">Specifications</a>
+    <a href="https://ontorag.org/tools/">Tools</a>
+    <a href="https://ontorag.org/datasets/">Datasets</a>
+    <a href="https://github.com/ontorag">GitHub</a>
+  </div>
+</nav>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">OntoRAG · version {{VERSION}}</p>
+    <h1>Build Vocabulary and Dataset Format</h1>
+    <p class="lede">What an OntoRAG pipeline produces, how each artifact was built and governed, and how a published dataset is laid out on disk so any service can read it.</p>
+    <dl class="facts">
+      <div><dt>Namespace</dt><dd><code>https://ontorag.org/vocab#</code></dd></div>
+      <div><dt>Prefix</dt><dd><code>orag:</code></dd></div>
+      <div><dt>Dataset format</dt><dd><code>0.1</code></dd></div>
+      <div><dt>Licence</dt><dd><a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a></dd></div>
+    </dl>
+    <p class="downloads">
+      <a class="button" href="orag.ttl">Turtle</a>
+      <a class="button" href="orag.jsonld">JSON-LD</a>
+      <a class="button" href="orag.rdf">RDF/XML</a>
+      <a class="button" href="orag.nt">N-Triples</a>
+      <a class="button" href="dataset/0.1/manifest.schema.json">Manifest schema</a>
+      <a class="button ghost" href="https://github.com/ontorag/vocab">Source on GitHub</a>
+    </p>
+  </div>
+</header>
+
+<div class="wrap layout">
+<nav class="toc" aria-label="Contents">
+  <p class="toc-title">Contents</p>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#format">Dataset format</a></li>
+    <li><a href="#artifacts">Artifacts and build runs</a></li>
+    <li><a href="#alignment-model">Baselines and alignment</a></li>
+    <li><a href="#governance">Governance status</a></li>
+    <li><a href="#reference">Reference</a>
+      <ol class="terms">{{TOC_TERMS}}</ol>
+    </li>
+    <li><a href="#vocabularies">Controlled vocabularies</a></li>
+    <li><a href="#changes">Changes from 0.1.0</a></li>
+    <li><a href="#examples">Examples</a></li>
+  </ol>
+</nav>
+
+<main>
+<section id="overview">
+  <h2>Overview</h2>
+  <p>OntoRAG turns documents into a governed knowledge graph. Two companion specifications describe the result:</p>
+  <div class="split">
+    <div class="card">
+      <h4>Build vocabulary and dataset format (this page)</h4>
+      <p>The <strong>outputs</strong> and how they were made: the dataset and its manifest, schema cards, the exported ontology, instance graphs, indexes, build runs, baselines, alignment decisions and governance status.</p>
+    </div>
+    <div class="card">
+      <h4><a href="https://ontorag.org/provenance/">Provenance and citation ontology</a> (<code>orp:</code>)</h4>
+      <p>The <strong>evidence</strong>: which source, file, page and passage each resource comes from, how to cite it, and how per-source packs compose and scope a dataset.</p>
+    </div>
+  </div>
+  <p>Both reuse PROV-O, so a build run that <code>orag:consumed</code> an <code>orp:SourceFile</code> and a mention that <code>orp:mentions</code> a resource sit in the same provenance graph. An <a href="#Dataset"><code>orag:Dataset</code></a> is a <code>void:Dataset</code> whose subsets are <code>orp:Pack</code>s.</p>
+</section>
+
+<section id="format">
+  <h2>Dataset format 0.1</h2>
+  <p>A published dataset is a directory, usually a git repository ("GitHub as storage"), that a service can read without a database or a clone. <code>manifest.json</code> at its root is the contract. A consumer reads the manifest, loads the graph and entity index, then streams chunks and vectors, joining them by chunk id.</p>
+  <pre class="tree">manifest.json                 <span>the contract (manifest.schema.json)</span>
+ontology/
+  world.ttl                   <span>the knowledge graph, source of truth</span>
+  entities.jsonl              <span>flat entity index (entity.schema.json)</span>
+  prefixes.json
+content/
+  sources.json                <span>source documents and their checksums</span>
+  books.json                  <span>pack registry: id → {title, path, requires}</span>
+  chunks/&lt;pack&gt;.jsonl         <span>retrievable text (chunk.schema.json)</span>
+embeddings/
+  config.json
+  vectors/&lt;pack&gt;.jsonl        <span>one vector per chunk, same id (embedding.schema.json)</span></pre>
+  <p>Storing chunks and vectors <strong>one file per pack</strong> makes a pack a literal slice of the dataset: <a href="https://ontorag.org/provenance/#packs">composition and access scoping</a> reduce to selecting files and named graphs.</p>
+  <h3>Manifest fields</h3>
+  <p>Fields marked <span class="req">*</span> are required. Counts and chunking parameters are informative.</p>
+  {{MANIFEST_FIELDS}}
+  <h3>Record schemas</h3>
+  <table>
+    <thead><tr><th>Schema</th><th>Describes</th></tr></thead>
+    <tbody>
+      <tr><td><a href="dataset/0.1/manifest.schema.json"><code>manifest.schema.json</code></a></td><td>The root <code>manifest.json</code>.</td></tr>
+      <tr><td><a href="dataset/0.1/chunk.schema.json"><code>chunk.schema.json</code></a></td><td>One line of <code>content/chunks/*.jsonl</code>: id <code>&lt;pack&gt;::&lt;seq&gt;</code>, heading path, text, linked entity IRIs.</td></tr>
+      <tr><td><a href="dataset/0.1/embedding.schema.json"><code>embedding.schema.json</code></a></td><td>One line of <code>embeddings/vectors/*.jsonl</code>: chunk id and vector.</td></tr>
+      <tr><td><a href="dataset/0.1/entity.schema.json"><code>entity.schema.json</code></a></td><td>One line of <code>ontology/entities.jsonl</code>: IRI, types, label, aliases, <code>attestedIn</code> and <code>definedIn</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>Validate a dataset with any JSON Schema validator (draft-07), for example <code>check-jsonschema --schemafile https://ontorag.org/vocab/dataset/0.1/manifest.schema.json manifest.json</code>. The <a href="https://github.com/ontorag/vocab/tree/main/examples/dataset">sample</a> is taken from the Ars Magica dataset and passes every schema.</p>
+</section>
+
+<section id="artifacts">
+  <h2>Artifacts and build runs</h2>
+  <p>Every output is an <a href="#Artifact"><code>orag:Artifact</code></a> (a <code>prov:Entity</code>): a <a href="#SchemaCard">schema card</a>, the <a href="#OntologyArtifact">exported ontology</a>, an <a href="#GraphArtifact">instance graph</a> (for the whole dataset or one pack), an <a href="#IndexArtifact">index</a> or a <a href="#QualityReport">quality report</a>. Each carries a checksum, a location and a <a href="#governance">status</a>. Source documents are not artifacts: they are <code>orp:SourceFile</code>s.</p>
+  <p>Each execution of a pipeline stage is an <a href="#BuildRun"><code>orag:BuildRun</code></a> (a <code>prov:Activity</code>) that records its <a href="#vocab-Stage">stage</a>, what it <a href="#consumed">consumed</a> and <a href="#produced">produced</a>, the <a href="#pipelineVersion">software version</a> and the <a href="#languageModel">language model</a>. Together these give a reproducible lineage from every triple back to the files and model calls that produced it.</p>
+</section>
+
+<section id="alignment-model">
+  <h2>Baselines and alignment</h2>
+  <p>OntoRAG aligns to existing ontologies before inventing anything. A dataset declares the <a href="#BaselineOntology">baselines</a> it is <a href="#alignedWith">aligned with</a> and the <a href="#alignmentRole">role</a> each plays: the <em>domain schema</em> (e.g. rpg-schema) or a <em>supporting vocabulary</em> (schema.org, FOAF, Dublin Core). Each class and property of the exported ontology can state its <a href="#origin">origin</a> and the <a href="#vocab-AlignmentDecision">alignment decision</a> taken for it: <em>reused</em> as is, <em>extended</em> as a sub-class or sub-property, or <em>induced</em> as new.</p>
+</section>
+
+<section id="governance">
+  <h2>Governance status</h2>
+  <p>Language models propose; deterministic code merges; people approve. <a href="#status"><code>orag:status</code></a> records where an artifact stands:</p>
+  <p class="citation-demo"><span>Proposed</span> → <span>Approved</span> → <span>Deprecated</span> &nbsp;·&nbsp; any → <span>Revoked</span></p>
+  <p>Only approved schema cards should drive instance extraction, and revoked artifacts must not be served. The review itself is an ordinary <code>prov:Activity</code> associated with the person who approved it.</p>
+</section>
+
+<section id="reference">
+  <h2>Reference</h2>
+  <h3>Classes</h3>
+  {{CLASSES}}
+  <h3>Properties</h3>
+  {{PROPERTIES}}
+</section>
+
+<section id="vocabularies">
+  <h2>Controlled vocabularies</h2>
+  {{SCHEMES}}
+</section>
+
+<section id="changes">
+  <h2>Changes from 0.1.0</h2>
+  <p>Version 0.2.0 moves the namespace from <code>https://www.ontorag.org/vocab#</code> to <code>https://ontorag.org/vocab#</code>, so that it resolves to this page. It also narrows the vocabulary to build metadata and hands evidence and composition to <a href="https://ontorag.org/provenance/"><code>orp:</code></a>, removing terms that overlapped with it.</p>
+  <table>
+    <thead><tr><th>0.1.0</th><th>0.2.0</th></tr></thead>
+    <tbody>
+      <tr><td><code>SourceArtifact</code>, <code>mediaType</code>, <code>sourceLocator</code>, <code>anchorScheme</code></td><td><code>orp:SourceFile</code> with <code>orp:checksum</code> and <code>dcterms:format</code></td></tr>
+      <tr><td><code>SourceSpan</code>, <code>SpanSelector</code>, <code>SpanRepresentation</code>, <code>excerpt</code>, <code>about</code>, selector types</td><td><code>orp:Mention</code> (a Web Annotation) with <code>oa:TextQuoteSelector</code>, <code>orp:PageSelector</code>, <code>orp:SectionSelector</code></td></tr>
+      <tr><td><code>Product</code>, <code>requiresProduct</code>, <code>store</code>, <code>productId</code></td><td>Removed: entitlements belong to the serving application, which maps what a user holds to <code>orp:Pack</code>s</td></tr>
+      <tr><td><code>ActivationProfile</code>, <code>enablesGraph</code>, <code>disablesGraph</code></td><td>Pack selection rules in <code>orp:</code> (access scope and composition)</td></tr>
+      <tr><td><code>manifestGraph</code></td><td><code>orag:manifest</code> (the dataset's <code>manifest.json</code>)</td></tr>
+      <tr><td><code>contentHash</code> + <code>hashAlgorithm</code></td><td><code>orag:checksum</code> as <code>"sha256:…"</code></td></tr>
+      <tr><td><code>storesAt</code></td><td><code>orag:location</code></td></tr>
+      <tr><td><code>producedArtifact</code>, <code>consumedArtifact</code></td><td><code>orag:produced</code>, <code>orag:consumed</code></td></tr>
+      <tr><td><code>Staging</code>, <code>Certified</code></td><td><code>orag:Proposed</code>, <code>orag:Approved</code></td></tr>
+      <tr><td><code>LlamaIndex</code>, <code>PageIndex</code>, <code>BM25</code>, <code>EmbeddingStore</code></td><td>Index kinds rather than products: <code>DenseVectors</code>, <code>Keyword</code>, <code>EntityIndex</code>, <code>TreeIndex</code></td></tr>
+      <tr><td><code>orag:Json</code></td><td><code>rdf:JSON</code></td></tr>
+      <tr><td></td><td>New: <code>Dataset</code>, <code>SchemaCard</code>, <code>OntologyArtifact</code>, <code>BaselineOntology</code>, <code>Stage</code>, alignment terms, <code>buildOf</code>, <code>languageModel</code>, <code>dimensions</code>, <code>similarityMetric</code></td></tr>
+    </tbody>
+  </table>
+  <p>The dataset JSON Schemas moved from <code>https://ontorag.dev/schema/</code>, which does not resolve, to <code>https://ontorag.org/vocab/dataset/0.1/</code>.</p>
+</section>
+
+<section id="examples">
+  <h2>Examples</h2>
+  <details open>
+    <summary><a href="examples/governed-pipeline.ttl"><code>examples/governed-pipeline.ttl</code></a>: a governed build, from proposal to approval to extraction</summary>
+<pre><code>{{EXAMPLE_PIPELINE}}</code></pre>
+  </details>
+  <details>
+    <summary><a href="examples/amol-build.ttl"><code>examples/amol-build.ttl</code></a>: build metadata of the Ars Magica dataset</summary>
+<pre><code>{{EXAMPLE_AMOL}}</code></pre>
+  </details>
+</section>
+</main>
+</div>
+
+<footer class="wrap footer">
+  <p>OntoRAG Build Vocabulary {{VERSION}} and dataset format 0.1, by Marco Montanari. Released under <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>; the sample dataset records keep the licence of the Ars Magica Open License (CC-BY-SA 4.0). <a href="https://github.com/ontorag/vocab/issues">Report an issue</a>.</p>
+</footer>
+</body>
+</html>

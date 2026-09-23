@@ -1,0 +1,74 @@
+# Illustrative lineage of a governed OntoRAG build (fictional example.org resources): a schema is
+# proposed by a language model, aligned, merged, approved by a person, and only then used to extract
+# instances.
+
+@prefix orag:    <https://ontorag.org/vocab#> .
+@prefix orp:     <https://ontorag.org/provenance#> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:      <https://example.org/dataset/> .
+
+ex:srd a orp:SourceFile ;
+    orp:fileOf ex:srd-work ;
+    orp:checksum "sha256:8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87" .
+ex:srd-work a orp:Source ; dcterms:title "System Reference Document 5.2.1" .
+
+ex:rpg-schema a orag:BaselineOntology ;
+    dcterms:identifier "rpg" ;
+    orag:alignmentRole orag:DomainSchema .
+
+# 1. propose and align: produces a proposed schema card
+ex:run-propose a orag:BuildRun ;
+    orag:stage orag:ProposeSchema ;
+    orag:consumed ex:srd , ex:rpg-schema ;
+    orag:produced ex:card-2 ;
+    orag:pipelineVersion "ontorag 0.1.12" ;
+    orag:languageModel "~deepseek/deepseek-v4-flash-latest" .
+
+ex:card-2 a orag:SchemaCard ;
+    orag:status orag:Proposed ;
+    orag:dependsOn ex:card-1 ;
+    orag:alignedWith ex:rpg-schema ;
+    orag:location "ontology/schema_card.proposed.json"^^xsd:anyURI .
+
+ex:card-1 a orag:SchemaCard ;
+    orag:status orag:Deprecated .
+
+# 2. a person reviews and approves the card
+ex:review a prov:Activity ;
+    prov:used ex:card-2 ;
+    prov:generated ex:card-2-approved ;
+    prov:wasAssociatedWith ex:maintainer .
+ex:maintainer a prov:Person .
+
+ex:card-2-approved a orag:SchemaCard ;
+    prov:wasRevisionOf ex:card-2 ;
+    orag:status orag:Approved ;
+    orag:location "ontology/schema_card.json"^^xsd:anyURI .
+
+# 3. export and extract against the approved card
+ex:schema a orag:OntologyArtifact ;
+    orag:dependsOn ex:card-2-approved ;
+    orag:location "ontology/schema.ttl"^^xsd:anyURI .
+
+ex:SpellArea a owl:ObjectProperty ;
+    rdfs:isDefinedBy ex:schema ;
+    orag:alignment orag:Induced .
+
+ex:run-extract a orag:BuildRun ;
+    orag:stage orag:ExtractInstances ;
+    orag:consumed ex:srd , ex:card-2-approved ;
+    orag:produced ex:world ;
+    orag:languageModel "~deepseek/deepseek-v4-flash-latest" .
+
+ex:world a orag:GraphArtifact ;
+    orag:status orag:Proposed ;
+    orag:dependsOn ex:card-2-approved ;
+    orag:hasReport ex:shacl-report ;
+    orag:location "ontology/world.ttl"^^xsd:anyURI .
+
+ex:shacl-report a orag:QualityReport ;
+    rdfs:comment "SHACL validation of world.ttl against the provenance shapes: 0 violations." .
