@@ -8,8 +8,7 @@
     "ontorag",
     "dataset",
     "ontology",
-    "content",
-    "embeddings"
+    "content"
   ],
   "additionalProperties": true,
   "properties": {
@@ -264,7 +263,7 @@
           "description": "Vector counts (informative)."
         }
       },
-      "description": "Dense vectors for the chunks, and how to embed queries compatibly."
+      "description": "Dense vectors for the chunks, and how to embed queries compatibly. Optional: without it, consumers can still retrieve through the ontology and keywords, but not by vector similarity."
     },
     "schema": {
       "type": "object",

@@ -34,6 +34,20 @@
         "type": "string"
       }
     },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "For paginated sources: physical index (1-based) of the page the chunk starts on."
+    },
+    "page_end": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "For paginated sources: physical index of the last page the chunk covers, if different from page."
+    },
+    "page_label": {
+      "type": "string",
+      "description": "The page number printed on that page, as a reader would cite it (may differ from page)."
+    },
     "text": {
       "type": "string",
       "description": "The chunk's plain text, used both for retrieval display and as embedding input."
