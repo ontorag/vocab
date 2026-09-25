@@ -105,7 +105,7 @@ embeddings/
     <tbody>
       <tr><td><a href="dataset/0.1/manifest.schema.json"><code>manifest.schema.json</code></a></td><td>The root <code>manifest.json</code>.</td></tr>
       <tr><td><a href="dataset/0.1/chunk.schema.json"><code>chunk.schema.json</code></a></td><td>One line of <code>content/chunks/*.jsonl</code>: id <code>&lt;pack&gt;::&lt;seq&gt;</code>, heading path, text, linked entity IRIs.</td></tr>
-      <tr><td><a href="dataset/0.1/embedding.schema.json"><code>embedding.schema.json</code></a></td><td>One line of <code>embeddings/vectors/*.jsonl</code>: chunk id and vector.</td></tr>
+      <tr><td><a href="dataset/0.1/embedding.schema.json"><code>embedding.schema.json</code></a></td><td>One line of <code>embeddings/vectors/*.jsonl</code> (chunk id and vector), or of the optional <code>embeddings.entity_vectors_glob</code> files (entity IRI and vector).</td></tr>
       <tr><td><a href="dataset/0.1/entity.schema.json"><code>entity.schema.json</code></a></td><td>One line of <code>ontology/entities.jsonl</code>: IRI, types, label, aliases, <code>attestedIn</code> and <code>definedIn</code>.</td></tr>
     </tbody>
   </table>
@@ -164,6 +164,7 @@ embeddings/
     </tbody>
   </table>
   <p>Dataset format 0.1 was revised compatibly on 2026-09-23: <code>embeddings</code> became optional (ontology and keyword retrieval work without vectors) and chunks gained optional <code>page</code>, <code>page_end</code> and <code>page_label</code> for paginated sources. Every manifest and record valid before remains valid.</p>
+  <p>On 2026-09-25 the manifest gained an optional <code>embeddings.entity_vectors_glob</code>: embeddings of each entity's label, type and description, for retrieval that goes from a described thing to the thing.</p>
   <p>The dataset JSON Schemas moved from <code>https://ontorag.dev/schema/</code>, which does not resolve, to <code>https://ontorag.org/vocab/dataset/0.1/</code>.</p>
 </section>
 

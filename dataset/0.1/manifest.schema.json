@@ -261,6 +261,10 @@
             }
           },
           "description": "Vector counts (informative)."
+        },
+        "entity_vectors_glob": {
+          "type": "string",
+          "description": "Optional. Glob (relative to root) matching NDJSON files of entity vectors: one record {id: <entity IRI>, vector} per entity, sharded as the dataset likes (same record schema as chunk vectors), embedded from the entity's label, type and description with the same provider and model. Lets a question that describes a thing without naming it find the thing (entity retrieval)."
         }
       },
       "description": "Dense vectors for the chunks, and how to embed queries compatibly. Optional: without it, consumers can still retrieve through the ontology and keywords, but not by vector similarity."
